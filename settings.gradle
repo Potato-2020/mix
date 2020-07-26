@@ -1,0 +1,3 @@
+rootProject.name='ASMMix'
+include ':demo'
+include ':lib'

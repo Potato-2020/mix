@@ -1,0 +1,104 @@
+//插件多的时候，可以这样写（gradle2.1以上）
+plugins {
+    id 'java-library'
+    id 'groovy'
+    id 'maven-publish'
+//https://github.com/Potato-2020/gradle-bintray-plugin
+    id 'com.jfrog.bintray'
+}
+
+repositories {
+    google()
+    jcenter()
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    // 包含了AMS字节码注入工具
+    implementation 'com.android.tools.build:gradle:3.6.3'
+    implementation gradleApi()//gradle sdk
+    implementation localGroovy()//groovy sdk
+    api files('libs/mix.jar')
+}
+
+sourceCompatibility = "8"
+targetCompatibility = "8"
+//编码格式
+tasks.withType(JavaCompile) {
+    options.encoding 'UTF-8'
+}
+group = 'com.potato.mix'
+version = '0.1'
+
+////文档jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+//代码jar
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            artifactId = 'MixPlugin'
+            from components.java
+            pom {
+                //参考https://maven.apache.org/pom.html#Licenses
+                name = 'Plugin-Mix'
+                description = 'A simple Mix Plugin'
+                url = 'http://www.github.com'
+//                properties = [
+//                        myProp          : "value",
+//                        "prop.with.dots": "anotherValue"
+//                ]
+                //开源许可协议
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'Potato'
+                        name = 'Potato Wang'
+                        email = 'w15201163153@sina.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
+javadoc {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+
+    //发布到jcenter
+    bintray {
+        user = 'potato-2020'
+        key = 'f5184cc3b40bd58a9a4132d98ff8c9ea895e8b1e'
+        publications = ['plugin']
+//        configurations = ['archives']
+        pkg {
+            repo = 'ASMMix'
+            name = 'MixPlugin'
+//            userOrg = 'bintray_user'
+            licenses = ['Apache-2.0']
+            vcsUrl = 'https://github.com/Potato-2020/***'
+            version {
+                name = 'MixPlugin-0.1'
+                desc = 'Gradle MixPlugin '
+                released = new Date()
+                vcsTag = '0.1'
+                attributes = ['gradle-plugin': 'com.potato.mix:protoPligin']
+            }
+        }
+    }
+}
