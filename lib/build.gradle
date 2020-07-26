@@ -28,7 +28,7 @@ tasks.withType(JavaCompile) {
     options.encoding 'UTF-8'
 }
 group = 'com.potato.mix'
-version = '0.1'
+version = '0.2'
 
 ////文档jar
 task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -44,12 +44,12 @@ task sourceJar(type: Jar) {
 
 publishing {
     publications {
-        plugin(MavenPublication) {
-            artifactId = 'MixPlugin'
+        mixPlugin(MavenPublication) {
+            artifactId = 'mixPlugin'
             from components.java
             pom {
                 //参考https://maven.apache.org/pom.html#Licenses
-                name = 'MixPlugin'
+                name = 'mixPlugin'
                 description = 'A simple Mix Plugin'
                 url = 'http://www.github.com'
 //                properties = [
@@ -93,11 +93,11 @@ javadoc {
             licenses = ['Apache-2.0']
             vcsUrl = 'https://github.com/Potato-2020/***'
             version {
-                name = 'MixPlugin-0.1'
+                name = 'mixPlugin-0.1'
                 desc = 'Gradle MixPlugin '
                 released = new Date()
                 vcsTag = '0.1'
-                attributes = ['gradle-plugin': 'com.potato.mix:protoPligin']
+                attributes = ['gradle-plugin': 'com.potato.mix:mixPligin']
             }
         }
     }
