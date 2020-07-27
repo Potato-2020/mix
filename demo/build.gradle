@@ -1,11 +1,13 @@
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
-apply plugin: 'mixPlugin'
+//apply plugin: 'mixPlugin'//id的方式，引入本地maven插件
+//apply plugin: MixPlugin//buildSrc方式，直接引入插件
 
-mix {
-    pathPre 'com.potato.asmmix'
-}
+//mix {
+//    pathPre 'com.potato.asmmix'
+//}
 
 android {
     compileSdkVersion 28
