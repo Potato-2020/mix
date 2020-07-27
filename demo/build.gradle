@@ -2,12 +2,13 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
-//apply plugin: 'mixPlugin'//id的方式，引入本地maven插件
+apply plugin: 'mixPlugin'//id的方式，引入本地maven插件
 //apply plugin: MixPlugin//buildSrc方式，直接引入插件
 
-//mix {
-//    pathPre 'com.potato.asmmix'
-//}
+mix {
+    openLog true
+    pathPre 'com.potato.asmmix'
+}
 
 android {
     compileSdkVersion 28
@@ -50,5 +51,5 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-//    implementation 'com.github.Potato-2020:mixTools:v0.1'
+    implementation 'com.github.Potato-2020:mixTools:v0.1'
 }
