@@ -180,6 +180,7 @@ class MixTransform extends Transform {
     static class ScanClassVisitor extends ClassVisitor {
 
         String className
+        boolean isInterface
 
         ScanClassVisitor(int api, ClassVisitor cv, String className) {
             super(api, cv)
@@ -189,45 +190,27 @@ class MixTransform extends Transform {
         @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             super.visit(version, access, name, signature, superName, interfaces)
+            isInterface = (access & Opcodes.ACC_INTERFACE) != 0
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions)
-            if (null != mixMethodName && "" != mixMethodName) {
-                if (mixMethodName == name) {
-                    //匹配对应的方法名字，进行插桩
+            if (!isInterface) {
+                if (null != mixMethodName && "" != mixMethodName) {
+                    if (mixMethodName == name) {
+                        //匹配对应的方法名字，进行插桩
+                        mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
+                    }
+                } else {
+                    //没有配置方法名称，无差别插桩
                     mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
                 }
-            } else {
-                //没有配置方法名称，无差别插桩
-                mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
+                log('=========================================================START==================================================================')
+                log("${className}>>>$name")
             }
-            log('=========================================================START==================================================================')
-            log("${className}>>>$name")
             return mv
         }
-    }
-
-
-    /**
-     * 操作XX方法的字节码，插入代码(手动插入，自己指定位置)
-     */
-    static class ScanMethodVisitor extends MethodVisitor {
-
-        ScanMethodVisitor(int api, MethodVisitor mv) {
-            super(api, mv)
-        }
-
-        @Override
-        public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-        }
-
-        @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-            mv.visitMethodInsn(opcode, owner, name, desc, itf)
-        }
-
     }
 
     /**
@@ -258,11 +241,11 @@ class MixTransform extends Transform {
             if (!methodName.contains("<init>")) {
                 log("方法前插入")
                 log('=========================================================OVER==========================================================\n\n')
-                getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
-                visitLdcInsn("Let's go")
-                invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
-//            mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
-//            mv.visitLdcInsn("========start=========")
+                for (i in 0..3) {
+                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
+                    visitLdcInsn("Let's go$i")
+                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
+                }
             }
         }
 
@@ -271,11 +254,11 @@ class MixTransform extends Transform {
             if (methodName.contains("<init>")) {
                 log('方法后插入')
                 log('=========================================================OVER==================================================================\n\n')
-                getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
-                visitLdcInsn("Let's go")
-                invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
-//                mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
-//                mv.visitLdcInsn("========start=========")
+                for (i in 0..3) {
+                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
+                    visitLdcInsn("Sorry, I'm tired$i")
+                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
+                }
             }
         }
     }
@@ -283,7 +266,7 @@ class MixTransform extends Transform {
     /**
      * 打印日志
      */
-    static def log (String msg) {
+    static def log(String msg) {
         if (openLog) {
             System.out.println(msg)
         }
