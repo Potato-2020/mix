@@ -11,6 +11,11 @@ class MixExtension {
     def pathPre//包名前缀
     def methodName//方法名
     def useAnnotation//是否使用注解的代码
+    ArrayList exclude//排除
+
+    MixExtension() {
+        exclude = []//初始化一个ArrayList
+    }
 
     def openLog(boolean openLog) {
         this.openLog = openLog
@@ -26,5 +31,15 @@ class MixExtension {
 
     def methodName(String methodName) {
         this.methodName = methodName
+    }
+
+    def excludeSingle(String dir) {
+        if (!exclude.contains(dir)) {
+            exclude << dir
+        }
+    }
+
+    def exclude(String... dirs) {
+        dirs.each { excludeSingle(it) }
     }
 }
