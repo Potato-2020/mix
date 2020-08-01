@@ -96,9 +96,9 @@ class MixTransform extends Transform {
                     Enumeration enumeration = srcJar.entries()
                     while (enumeration.hasMoreElements()) {
                         JarEntry jarEntry = enumeration.nextElement()
-                //取出每一个class类，注意这里的包名是"/"分割 ，不是"."
+                        //取出每一个class类，注意这里的包名是"/"分割 ，不是"."
                         String entryName = jarEntry.name
-                //todothing
+                        //todothing
 //                        if (entryName.startsWith(pathPre)) {
 //                            InputStream inputStream = srcJar.getInputStream(jarEntry)
 //                            //从jar中取出对应的输入流
@@ -176,7 +176,7 @@ class MixTransform extends Transform {
      * @param jarFilepath jar文件的路径
      */
     private static boolean shouldProcessPreDexJar(String jarFilepath) {
-        boolean should = !jarFilepath.contains("com.androidx") &&  !jarFilepath.contains("com.android.support") && !jarFilepath.contains("/android/m2repository")
+        boolean should = !jarFilepath.contains("com.androidx") && !jarFilepath.contains("com.android.support") && !jarFilepath.contains("/android/m2repository")
         return should
     }
 
@@ -186,7 +186,7 @@ class MixTransform extends Transform {
      * @return
      */
     static boolean shouldProcessClassName(String name) {
-        return  name.endsWith(".class") && !name.startsWith("R\$") && !name.contains("\$") &&
+        return name.endsWith(".class") && !name.startsWith("R\$") && !name.contains("\$") &&
                 "R.class" != name && "BuildConfig.class" != name
     }
 
@@ -226,7 +226,7 @@ class MixTransform extends Transform {
 
         @Override
         AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-            if ("Lcom/potato/mix/MixClass;" == descriptor) {
+            if ("Lcom/potato/mix/MixExclude;" == descriptor) {
                 isMix = false
             }
             return super.visitAnnotation(descriptor, visible)
@@ -235,7 +235,7 @@ class MixTransform extends Transform {
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions)
-            if (!isInterface && !isAbstract && isMix && !name.contains("\$")) {
+            if (!isInterface && !isAbstract && isMix && excludeMethod(name)) {
                 if (null != mixMethodName && "" != mixMethodName) {
                     if (mixMethodName == name) {
                         log('=========================================================START==================================================================')
@@ -260,7 +260,6 @@ class MixTransform extends Transform {
     static class MixAdviceAdapter extends AdviceAdapter {
 
         String methodName
-        boolean isMix = true
 
         protected MixAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc) {
             super(api, mv, access, name, desc)
@@ -275,42 +274,44 @@ class MixTransform extends Transform {
          */
         @Override
         AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-            if ("Lcom/potato/mix/MixCode;" == desc) {
-                log("拿到了方法注解")
-                isMix = false
-            }
             return super.visitAnnotation(desc, visible)
         }
 
         @Override
         protected void onMethodEnter() {
-            if (isMix) {
-                if (!methodName.contains("<init>")) {
-                    log("方法前插入")
-                    for (i in 0..3) {
-                        getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
-                        visitLdcInsn("Let's go")
-                        invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
-                    }
-                    log('=========================================================OVER==========================================================\n\n')
+            if (!methodName.contains("<init>")) {
+                log("方法前插入")
+                for (i in 0..3) {
+                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
+                    visitLdcInsn("Let's go")
+                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
                 }
+                log('=========================================================OVER==========================================================\n\n')
             }
         }
 
         @Override
         protected void onMethodExit(int opcode) {
-            if (isMix) {
-                if (methodName.contains("<init>")) {
-                    log('方法后插入')
-                    for (i in 0..3) {
-                        getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
-                        visitLdcInsn("Sorry, I'm tired")
-                        invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
-                    }
-                    log('=========================================================OVER==================================================================\n\n')
+            if (methodName.contains("<init>")) {
+                log('方法后插入')
+                for (i in 0..3) {
+                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
+                    visitLdcInsn("Sorry, I'm tired")
+                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
                 }
+                log('=========================================================OVER==================================================================\n\n')
             }
         }
+    }
+
+    /**
+     * 排除一些方法（这些方法不参与插桩）
+     * toString  copy  hashCode  equals component1
+     * @param name
+     * @return
+     */
+    static boolean excludeMethod(String name) {
+        return name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$")
     }
 
     /**

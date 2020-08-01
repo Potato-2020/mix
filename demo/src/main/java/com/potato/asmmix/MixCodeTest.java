@@ -7,7 +7,7 @@ import com.potato.mix.MixCode;
 /**
  * create by Potato
  * create time 2020/7/25
- * Description：注解代码类，插桩的代码从这里获取
+ * Description：注解代码类，插桩的代码从这里获取(目前还在开发尝试中)
  */
 @MixClass
 public class MixCodeTest {
