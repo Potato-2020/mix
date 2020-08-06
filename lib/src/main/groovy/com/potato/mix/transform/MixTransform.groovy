@@ -1,6 +1,7 @@
 package com.potato.mix.transform
 
 import com.android.build.api.transform.*
+import com.android.builder.model.AndroidProject
 import com.android.utils.FileUtils
 import com.google.common.collect.ImmutableSet
 import com.potato.mix.extentions.MixExtension
@@ -23,6 +24,8 @@ class MixTransform extends Transform {
     private static ArrayList exclude//排除class文件
 
 
+
+
     MixTransform(Project project) {
         this.project = project
         MixExtension mixExtension = project.mix
@@ -34,7 +37,24 @@ class MixTransform extends Transform {
             if (openLog) {
                 log("获取扩展块成功： pathPre: ${pathPre}; methodName: ${mixMethodName}; openLog: ${openLog}; exclude: $exclude")
             }
+//            init()
         }
+    }
+
+    private def init() {
+        cachePath = project.buildDir.absolutePath + File.separator + AndroidProject.FD_INTERMEDIATES + "/mixs/" + variantName
+        aspectPath = cachePath + File.separator + "mixs"
+        if (!aspectDir.exists()) {
+            aspectDir.mkdirs()
+        }
+    }
+
+    private File getCacheDir() {
+        return new File(cachePath)
+    }
+
+    private File getAspectDir() {
+        return new File(aspectPath)
     }
 
     /**
