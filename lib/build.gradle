@@ -19,7 +19,7 @@ dependencies {
     implementation 'com.android.tools.build:gradle:3.6.3'
     implementation gradleApi()//gradle sdk
     implementation localGroovy()//groovy sdk
-    api files('libs/mix.jar')
+//    api files('libs/mix.jar')
 }
 
 sourceCompatibility = "8"

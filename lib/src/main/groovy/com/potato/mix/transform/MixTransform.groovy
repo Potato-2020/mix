@@ -23,7 +23,8 @@ class MixTransform extends Transform {
     private static String mixMethodName//方法名
     private static ArrayList exclude//排除class文件
 
-
+    //存储插桩方法内容
+    private static Map<String, String> methodMap= new HashMap<>()
 
 
     MixTransform(Project project) {
@@ -110,7 +111,7 @@ class MixTransform extends Transform {
                 File src = jarInput.file
                 def hex = DigestUtils.md5Hex(jarInput.file.absolutePath)
                 File dest = transformInvocation.getOutputProvider().getContentLocation(destName + "_" + hex, jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                log("jar文件>>>${src.absolutePath}")
+//                log("jar文件>>>${src.absolutePath}")
                 if (shouldProcessPreDexJar(src.absolutePath)) {
                     def srcJar = new JarFile(src)
                     Enumeration enumeration = srcJar.entries()
@@ -231,6 +232,8 @@ class MixTransform extends Transform {
         boolean isInterface
         boolean isAbstract
         boolean isMix = true//true：默认混淆代码插桩
+        boolean isTemplateClass = false//true：插桩模板类
+        String type = ""//模板类的type
 
         ScanClassVisitor(int api, ClassVisitor cv, String className) {
             super(api, cv)
@@ -249,12 +252,26 @@ class MixTransform extends Transform {
             if ("Lcom/potato/mix/MixExclude;" == descriptor) {
                 isMix = false
             }
+            if ("Lcom/potato/mix/MixTemplate;" == descriptor) {
+                isTemplateClass = true
+                initType()
+            }
             return super.visitAnnotation(descriptor, visible)
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions)
+            if (isTemplateClass) {//模板类不参与插桩
+                if (excludeMethodTemp(name)) {
+                    //"Lcom/potato/asmmix/MixTemplate;"
+                    methodMap.put("type", type)
+                    methodMap.put("name", name)
+                    methodMap.put("desc", desc)
+                }
+                //保存name, desc, type
+                return mv
+            }
             if (!isInterface && !isAbstract && isMix && excludeMethod(name)) {
                 if (null != mixMethodName && "" != mixMethodName) {
                     if (mixMethodName == name) {
@@ -271,6 +288,21 @@ class MixTransform extends Transform {
                 }
             }
             return mv
+        }
+
+        private def initType() {
+            if (null == pathPre) return
+            String[] strs = pathPre.split("/")
+            String splitType = ""
+            if (strs.length > 0) {
+                splitType = strs[0]
+            }
+            if (splitType == "" || null == className) return
+            String[] typeStrs = className.split(splitType)
+            if (typeStrs.length == 0) return
+            String result = "L${splitType}${typeStrs[1]}"
+            type = "${result.substring(0, result.length() - 6)};".replace("\\","/")
+            log("找到了type=$type")
         }
     }
 
@@ -300,6 +332,7 @@ class MixTransform extends Transform {
         @Override
         protected void onMethodEnter() {
             if (!methodName.contains("<init>")) {
+                insertTemplate()
                 log("方法前插入")
                 for (i in 0..3) {
                     getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
@@ -313,6 +346,7 @@ class MixTransform extends Transform {
         @Override
         protected void onMethodExit(int opcode) {
             if (methodName.contains("<init>")) {
+                insertTemplate()
                 log('方法后插入')
                 for (i in 0..3) {
                     getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
@@ -320,6 +354,19 @@ class MixTransform extends Transform {
                     invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
                 }
                 log('=========================================================OVER==================================================================\n\n')
+            }
+        }
+
+        /**
+         * 插入模板方法
+         */
+        private void insertTemplate() {
+            String type = methodMap.get("type")
+            if (null != type) {
+                log("获取到了插桩的方法，正在给${methodName}插桩......")
+                String name = methodMap.get("name")
+                String desc = methodMap.get("desc")
+                invokeStatic(Type.getType(type), new Method(name, desc))
             }
         }
     }
@@ -332,6 +379,16 @@ class MixTransform extends Transform {
      */
     static boolean excludeMethod(String name) {
         return name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$")
+    }
+
+    /**
+     * 不参与插桩模板方法
+     * toString  copy  hashCode  equals component1
+     * @param name
+     * @return
+     */
+    static boolean excludeMethodTemp(String name) {
+        return name!= "<init>" && name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$")
     }
 
     /**
