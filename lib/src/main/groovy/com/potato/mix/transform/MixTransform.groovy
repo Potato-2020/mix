@@ -24,7 +24,8 @@ class MixTransform extends Transform {
     private static ArrayList exclude//排除class文件
 
     //存储插桩方法内容
-    private static Map<String, String> methodMap= new HashMap<>()
+    private static Map<String, List<Map<String, String>>> methodMapList = new HashMap<>()
+    private static List<Map<String, String>> methodList = new ArrayList<>()
 
 
     MixTransform(Project project) {
@@ -254,7 +255,7 @@ class MixTransform extends Transform {
             }
             if ("Lcom/potato/mix/MixTemplate;" == descriptor) {
                 isTemplateClass = true
-                initType()
+                findType()
             }
             return super.visitAnnotation(descriptor, visible)
         }
@@ -264,10 +265,13 @@ class MixTransform extends Transform {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions)
             if (isTemplateClass) {//模板类不参与插桩
                 if (excludeMethodTemp(name)) {
-                    //"Lcom/potato/asmmix/MixTemplate;"
-                    methodMap.put("type", type)
+                    //存储结构如下：一个type对应着一个List，List里装着每个方法的name、desc、type
+                    Map<String, String> methodMap = new HashMap<>()
+                    methodMap.put("type", type)//"Lcom/potato/asmmix/MixTemplate;"
                     methodMap.put("name", name)
                     methodMap.put("desc", desc)
+                    methodList.add(methodMap)
+                    methodMapList.put(type, methodList)
                 }
                 //保存name, desc, type
                 return mv
@@ -290,7 +294,11 @@ class MixTransform extends Transform {
             return mv
         }
 
-        private def initType() {
+        /**
+         * 找到type
+         * @return
+         */
+        private def findType() {
             if (null == pathPre) return
             String[] strs = pathPre.split("/")
             String splitType = ""
@@ -298,10 +306,11 @@ class MixTransform extends Transform {
                 splitType = strs[0]
             }
             if (splitType == "" || null == className) return
+            //以传入的className的第一个词作为分隔，取出并拼接成type-->Lcom/potato/asmmix/MixTemplate;
             String[] typeStrs = className.split(splitType)
             if (typeStrs.length == 0) return
             String result = "L${splitType}${typeStrs[1]}"
-            type = "${result.substring(0, result.length() - 6)};".replace("\\","/")
+            type = "${result.substring(0, result.length() - 6)};".replace("\\", "/")
             log("找到了type=$type")
         }
     }
@@ -358,15 +367,20 @@ class MixTransform extends Transform {
         }
 
         /**
-         * 插入模板方法
+         * 插入模板方法(获取所有的模板类及其对应的所有方法，并全部执行)
          */
         private void insertTemplate() {
-            String type = methodMap.get("type")
-            if (null != type) {
-                log("获取到了插桩的方法，正在给${methodName}插桩......")
-                String name = methodMap.get("name")
-                String desc = methodMap.get("desc")
-                invokeStatic(Type.getType(type), new Method(name, desc))
+            if (methodMapList.size() == 0) return
+            for (Map.Entry<String, List<Map<String, String>>> entry : methodMapList.entrySet()) {
+                if (null == entry || null == entry.value || entry.value.size() == 0) return
+                entry.value.each {
+                    Map<String, String> ms ->
+                        log("获取到了插桩的方法，正在给${methodName}插桩......")
+                        String name = ms.get("name")
+                        String type = ms.get("type")
+                        String desc = ms.get("desc")
+                        invokeStatic(Type.getType(type), new Method(name, desc))
+                }
             }
         }
     }
@@ -388,7 +402,7 @@ class MixTransform extends Transform {
      * @return
      */
     static boolean excludeMethodTemp(String name) {
-        return name!= "<init>" && name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$")
+        return name != "<init>" && name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$")
     }
 
     /**
