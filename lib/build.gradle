@@ -85,14 +85,14 @@ javadoc {
     bintray {
         user = 'potato-2020'
         key = 'f5184cc3b40bd58a9a4132d98ff8c9ea895e8b1e'
-        publications = ['plugin']
+        publications = ['mixPlugin']
 //        configurations = ['archives']
         pkg {
-            repo = 'ASMMix'
-            name = 'MixPlugin'
+            repo = 'mixPlugin'
+            name = 'mix'
 //            userOrg = 'bintray_user'
             licenses = ['Apache-2.0']
-            vcsUrl = 'https://github.com/Potato-2020/***'
+            vcsUrl = 'https://github.com/Potato-2020/mix.git'
             version {
                 name = 'mixPlugin-0.1'
                 desc = 'Gradle MixPlugin '
