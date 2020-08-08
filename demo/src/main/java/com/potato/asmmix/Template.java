@@ -10,11 +10,12 @@ import com.potato.mix.MixTemplate;
 @MixTemplate
 public class Template {
 
-    public static void mixOne() {
+    private static void mixOne() {
         System.out.println("插桩模板方法一！！！");
     }
 
-    public static void mixTow() {
+    private static void mixTow() {
         System.out.println("我是插桩方法模板二");
     }
+    private void test(){}
 }
