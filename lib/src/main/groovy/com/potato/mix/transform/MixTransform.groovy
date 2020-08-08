@@ -162,7 +162,7 @@ class MixTransform extends Transform {
      * @param classFilePath 扫描的class文件的路径
      */
     static boolean shouldProcessClass(String classFilePath) {
-        return classFilePath != null && classFilePath.startsWith(pathPre)
+        return classFilePath != null && classFilePath.startsWith(pathPre.replaceAll("\\.", "/"))
     }
 
     /**
@@ -172,11 +172,10 @@ class MixTransform extends Transform {
      */
     private static boolean shouldExcludeClass(String classFilePath) {
         if (exclude.size() == 0) return true
-        boolean lastFlag = true//默认可以扫描
         exclude.each { String dir ->
-            lastFlag = !classFilePath.startsWith(dir) && lastFlag
+            if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))) return false
         }
-        return lastFlag
+        return true
     }
 
     /**
