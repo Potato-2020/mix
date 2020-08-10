@@ -288,7 +288,7 @@ class MixTransform extends Transform {
          */
         private def findType() {
             if (null == pathPre) return
-            String[] strs = pathPre.split("/")
+            String[] strs = pathPre.replaceAll("\\.", "/").split("/")
             String splitType = ""
             if (strs.length > 0) {
                 splitType = strs[0]
