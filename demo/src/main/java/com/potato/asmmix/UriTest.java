@@ -11,12 +11,7 @@ import android.text.TextUtils;
 public class UriTest {
 
     public void uriTest(String path) {
-        Object b = null;
-        if (!TextUtils.isEmpty(path)) {
-            b = Uri.parse(path);
-        } else {
-            System.out.println();
-        }
+        Object b = !TextUtils.isEmpty(path) ? Uri.parse(path) : null;
     }
 
     //插桩会出现异常

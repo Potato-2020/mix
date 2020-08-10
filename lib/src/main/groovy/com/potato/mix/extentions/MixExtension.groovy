@@ -12,6 +12,7 @@ class MixExtension {
     def methodName//方法名
     def useAnnotation//是否使用注解的代码
     ArrayList exclude//排除
+    def isMix//是否开启插件
 
     MixExtension() {
         exclude = []//初始化一个ArrayList
@@ -19,6 +20,10 @@ class MixExtension {
 
     def openLog(boolean openLog) {
         this.openLog = openLog
+    }
+
+    def isMix(boolean isMix) {
+        this.isMix = isMix
     }
 
     def useAnnotation(boolean useAnnotation) {

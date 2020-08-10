@@ -6,8 +6,11 @@ apply plugin: 'mixPlugin'//id的方式，引入本地maven插件
 //apply plugin: MixPlugin//buildSrc方式，直接引入插件
 
 mix {
-    openLog true
-    pathPre 'com/potato/asmmix'
+    isMix true//开启混淆插桩插件
+    openLog true//开启日志打印
+    pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件
+//    methodName 'onCreate'//混淆插桩某个方法
+//    exclude '',''//排除这些包下的文件
 }
 
 android {
@@ -51,7 +54,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    implementation 'com.github.Potato-2020:mixTools:0.1'
+    implementation 'com.github.Potato-2020:mixTools:1.0'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
 //    implementation 'com.github.LuckSiege.PictureSelector:picture_library:v2.5.8'
 //    implementation 'com.github.bumptech.glide:glide:4.11.0'
