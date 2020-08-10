@@ -84,7 +84,7 @@ javadoc {
     //发布到jcenter
     bintray {
         user = 'potato-2020'
-        key = 'f5184cc3b40bd58a9a4132d98ff8c9ea895e8b1e'
+        key = '******'
         publications = ['mixPlugin']
 //        configurations = ['archives']
         pkg {
