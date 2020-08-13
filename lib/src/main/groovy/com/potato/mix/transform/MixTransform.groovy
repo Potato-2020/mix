@@ -267,14 +267,14 @@ class MixTransform extends Transform {
             if (!isInterface && !isAbstract && isMix && excludeMethod(name)) {
                 if (null != mixMethodName && "" != mixMethodName) {
                     if (mixMethodName == name) {
-//                        log('=========================================================START==================================================================')
-//                        log("${className}>>>$name")
+                        log('=========================================================START==================================================================')
+                        log("${className}>>>$name")
                         //匹配对应的方法名字，进行插桩
                         mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
                     }
                 } else {
-//                    log('=========================================================START==================================================================')
-//                    log("${className}>>>$name")
+                    log('=========================================================START==================================================================')
+                    log("${className}>>>$name")
                     //没有配置方法名称，无差别插桩
                     mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
                 }
@@ -330,13 +330,13 @@ class MixTransform extends Transform {
         protected void onMethodEnter() {
             if (!methodName.contains("<init>")) {
                 insertTemplate()
-//                log("方法前插入")
+                log("方法前插入")
                 for (i in 0..3) {
                     getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
                     visitLdcInsn("Let's go")
                     invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
                 }
-//                log('=========================================================OVER==========================================================\n\n')
+                log('=========================================================OVER==========================================================\n\n')
             }
         }
 
@@ -344,13 +344,13 @@ class MixTransform extends Transform {
         protected void onMethodExit(int opcode) {
             if (methodName.contains("<init>")) {
                 insertTemplate()
-//                log('方法后插入')
+                log('方法后插入')
                 for (i in 0..3) {
                     getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
                     visitLdcInsn("Sorry, I'm tired")
                     invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
                 }
-//                log('=========================================================OVER==================================================================\n\n')
+                log('=========================================================OVER==================================================================\n\n')
             }
         }
 
@@ -363,7 +363,7 @@ class MixTransform extends Transform {
                 if (null == entry || null == entry.value || entry.value.size() == 0) return
                 entry.value.each {
                     Map<String, String> ms ->
-                        log("获取到了插桩的方法，正在给${methodName}插桩......")
+//                        log("获取到了插桩的方法，正在给${methodName}插桩......")
                         String name = ms.get("name")
                         String type = ms.get("type")
                         String desc = ms.get("desc")
