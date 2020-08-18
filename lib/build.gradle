@@ -31,17 +31,23 @@ tasks.withType(JavaCompile) {
 group = 'com.potato.mix'
 version = '0.2'
 
-////文档jar
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
+java {
+    //gradle6.3新方法
+    withJavadocJar()//文档jar
+    withSourcesJar()//源代码jar
 }
 
+//文档jar
+//task javadocJar(type: Jar, dependsOn: javadoc) {
+//    classifier = 'javadoc'
+//    from javadoc.destinationDir
+//}
+
 //代码jar
-task sourceJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
+//task sourceJar(type: Jar) {
+//    classifier = 'sources'
+//    from sourceSets.main.allSource
+//}
 
 publishing {
     publications {
