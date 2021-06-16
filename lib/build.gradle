@@ -3,16 +3,13 @@ plugins {
     id 'java-library'
     id 'groovy'
     id 'maven-publish'
-//https://github.com/Potato-2020/gradle-bintray-plugin
-    id 'com.jfrog.bintray'
+    id 'signing'
 }
-
 
 dependencies {
     repositories {
         google()
         jcenter()
-
     }
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     // 包含了AMS字节码注入工具
@@ -28,8 +25,9 @@ targetCompatibility = "8"
 tasks.withType(JavaCompile) {
     options.encoding 'UTF-8'
 }
-group = 'com.potato.mix'
-version = '0.2'
+
+group = 'com.biligle.mix'
+version = '1.0'
 
 java {
     //gradle6.3新方法
@@ -37,75 +35,73 @@ java {
     withSourcesJar()//源代码jar
 }
 
-//文档jar
-//task javadocJar(type: Jar, dependsOn: javadoc) {
-//    classifier = 'javadoc'
-//    from javadoc.destinationDir
-//}
-
-//代码jar
-//task sourceJar(type: Jar) {
-//    classifier = 'sources'
-//    from sourceSets.main.allSource
-//}
-
 publishing {
     publications {
         mixPlugin(MavenPublication) {
             artifactId = 'mixPlugin'
             from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            // 配置 pop 文件格式
             pom {
-                //参考https://maven.apache.org/pom.html#Licenses
+                packaging 'aar'
                 name = 'mixPlugin'
                 description = 'A simple Mix Plugin'
                 url = 'http://www.github.com'
-//                properties = [
-//                        myProp          : "value",
-//                        "prop.with.dots": "anotherValue"
-//                ]
-                //开源许可协议
                 licenses {
                     license {
-                        name = 'The Apache License, Version 2.0'
+                        name = 'The Apache Software License, Version 2.0'
                         url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
                 developers {
                     developer {
                         id = 'Potato'
-                        name = 'Potato Wang'
-                        email = 'w15201163153@sina.com'
+                        name = 'PotatoW'
+                        email = 'pw87512@gmail.com'
                     }
                 }
+                scm {
+                    connection = 'https://github.com/Potato-2020/mix'
+                    developerConnection = 'https://github.com/Potato-2020/mix.git'
+                    url = 'https://github.com/Potato-2020/mix'
+                }
+            }
+        }
+    }
+
+// 配置远程仓库
+    repositories {
+        // maven 对应的用户名和密码自定义存在 local.properties 文件中
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('gradle.properties').newDataInputStream())
+        def mavenUser = properties.getProperty("maven.user")
+        def mavenPassword = properties.getProperty("maven.password")
+        maven {
+            def releasesRepoUrl = layout.buildDirectory.dir('https://s01.oss.sonatype.org/content/repositories/releases')
+            def snapshotsRepoUrl = layout.buildDirectory.dir('https://s01.oss.sonatype.org/content/repositories/snapshots')
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username mavenUser
+                password mavenPassword
             }
         }
     }
 }
 
-javadoc {
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
-    }
+// 对 mixPlugin 发布内容进行签名
+signing {
+    sign publishing.publications.mixPlugin
+}
 
-    //发布到jcenter
-    bintray {
-        user = 'potato-2020'
-        key = '******'
-        publications = ['mixPlugin']
-//        configurations = ['archives']
-        pkg {
-            repo = 'mixPlugin'
-            name = 'mix'
-//            userOrg = 'bintray_user'
-            licenses = ['Apache-2.0']
-            vcsUrl = 'https://github.com/Potato-2020/mix.git'
-            version {
-                name = 'mixPlugin-0.1'
-                desc = 'Gradle MixPlugin '
-                released = new Date()
-                vcsTag = '0.1'
-                attributes = ['gradle-plugin': 'com.potato.mix:mixPligin']
-            }
-        }
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
     }
 }
