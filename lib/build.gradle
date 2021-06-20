@@ -78,15 +78,16 @@ publishing {
 
 // 配置远程仓库
     repositories {
-        // maven 对应的用户名和密码自定义存在 local.properties 文件中
+        // maven 对应的用户名和密码自定义存在 gradle.properties 文件中
         Properties properties = new Properties()
         properties.load(project.rootProject.file('gradle.properties').newDataInputStream())
         def mavenUser = properties.getProperty("maven.user")
         def mavenPassword = properties.getProperty("maven.password")
         maven {
-            def releasesRepoUrl = layout.buildDirectory.dir('https://s01.oss.sonatype.org/content/repositories/releases')
-            def snapshotsRepoUrl = layout.buildDirectory.dir('https://s01.oss.sonatype.org/content/repositories/snapshots')
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+//            def releasesRepoUrl = layout.buildDirectory.dir('https://s01.oss.sonatype.org/content/repositories/releases')
+//            def snapshotsRepoUrl = layout.buildDirectory.dir('https://s01.oss.sonatype.org/content/repositories/snapshots')
+//            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
             credentials {
                 username mavenUser
                 password mavenPassword
