@@ -40,6 +40,11 @@ class MixTransform extends Transform {
             isMix = mixExtension.isMix
             if (isMix && openLog) {
                 log("开始混淆插入代码： pathPre: ${pathPre}; methodName: ${mixMethodName}; openLog: ${openLog}; exclude: $exclude")
+                for (Map.Entry<String, List<Map<String, String>>> entry : methodMapList.entrySet()) {
+                    if (null == entry || null == entry.value || entry.value.size() == 0) return
+                    entry.value.clear()
+                }
+                methodMapList.clear()
             }
         }
     }
@@ -138,7 +143,6 @@ class MixTransform extends Transform {
                        if (file.isFile() && shouldExcludeClass(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
                            FileInputStream fis = new FileInputStream(file)
                            byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
-//                        log("MixPlugin>>>输出地址：" + file.parentFile.absolutePath + File.separator + file.name)
                            FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
                            fos.write(bytes)
                            fos.close()
@@ -199,6 +203,7 @@ class MixTransform extends Transform {
     }
 
     private byte[] scanClass(InputStream inputStream, String className) throws IOException {
+        log("MixPlugin>>>插桩目标：$className")
         //事件处理流程：读取事件-->适配器-->编写器
         //事件产生
         ClassReader cr = new ClassReader(inputStream)
@@ -287,7 +292,10 @@ class MixTransform extends Transform {
          * @return
          */
         private def findType() {
-            if (null == pathPre) return
+            if (null == pathPre) {
+                log("MixPlugin>>>没有找到模板类，请确保模板类的包名是否是：${pathPre}")
+                return
+            }
             String[] strs = pathPre.replaceAll("\\.", "/").split("/")
             String splitType = ""
             if (strs.length > 0) {
@@ -296,10 +304,13 @@ class MixTransform extends Transform {
             if (splitType == "" || null == className) return
             //以传入的className的第一个词作为分隔，取出并拼接成type-->Lcom/potato/asmmix/MixTemplate;
             String[] typeStrs = className.split(splitType)
-            if (typeStrs.length == 0) return
+            if (typeStrs.length == 0) {
+                log("MixPlugin>>>没有找到模板类，请确保模板类的包名是否是：${pathPre}")
+                return
+            }
             String result = "L${splitType}${typeStrs[1]}"
             type = "${result.substring(0, result.length() - 6)};".replace("\\", "/")
-            log("找到了模板类type=$type")
+            log("MixPlugin>>>找到了模板类type=$type")
         }
     }
 
@@ -359,15 +370,17 @@ class MixTransform extends Transform {
          */
         private void insertTemplate() {
             if (methodMapList.size() == 0) return
+//            log("MixPlugin>>>开始插入......插桩模板类个数：${methodMapList.size()}")
             for (Map.Entry<String, List<Map<String, String>>> entry : methodMapList.entrySet()) {
                 if (null == entry || null == entry.value || entry.value.size() == 0) return
+//                log("MixPlugin>>>开始插入......插桩模板类中函数的个数：${entry.value.size()}")
                 entry.value.each {
                     Map<String, String> ms ->
-                        log("获取到了插桩的方法，正在给${methodName}插桩......")
                         String name = ms.get("name")
                         String type = ms.get("type")
                         String desc = ms.get("desc")
                         invokeStatic(Type.getType(type), new Method(name, desc))
+                        log("获取到了插桩的方法，正在给${methodName}插桩......插入的方法是：$name")
                 }
             }
         }
