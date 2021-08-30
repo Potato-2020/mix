@@ -91,73 +91,75 @@ class MixTransform extends Transform {
 
     @Override
     public void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
-       if (isMix) {
-           //获取输入文件（这里只处理了ClASSES类型）
-           transformInvocation.getInputs().each { TransformInput input ->
-               //处理所有jar包
-               input.jarInputs.each { JarInput jarInput ->
-                   String destName = jarInput.name
-                   if (destName.endsWith(".jar")) {
-                       destName = destName.substring(0, destName.length() - 4)
-                   }
-                   File src = jarInput.file
-                   def hex = DigestUtils.md5Hex(jarInput.file.absolutePath)
-                   File dest = transformInvocation.getOutputProvider().getContentLocation(destName + "_" + hex, jarInput.contentTypes, jarInput.scopes, Format.JAR)
+        if (isMix) {
+            //获取输入文件（这里只处理了ClASSES类型）
+            transformInvocation.getInputs().each { TransformInput input ->
+                //处理所有jar包
+                input.jarInputs.each { JarInput jarInput ->
+                    String destName = jarInput.name
+                    if (destName.endsWith(".jar")) {
+                        destName = destName.substring(0, destName.length() - 4)
+                    }
+                    File src = jarInput.file
+                    def hex = DigestUtils.md5Hex(jarInput.file.absolutePath)
+                    File dest = transformInvocation.getOutputProvider().getContentLocation(destName + "_" + hex, jarInput.contentTypes, jarInput.scopes, Format.JAR)
 //                log("jar文件>>>${src.absolutePath}")
-                   if (shouldProcessPreDexJar(src.absolutePath)) {
-                       def srcJar = new JarFile(src)
-                       Enumeration enumeration = srcJar.entries()
-                       while (enumeration.hasMoreElements()) {
-                           JarEntry jarEntry = enumeration.nextElement()
-                           //取出每一个class类，注意这里的包名是"/"分割 ，不是"."
-                           String entryName = jarEntry.name
-                           //todothing
+                    if (shouldProcessPreDexJar(src.absolutePath)) {
+                        def srcJar = new JarFile(src)
+                        Enumeration enumeration = srcJar.entries()
+                        while (enumeration.hasMoreElements()) {
+                            JarEntry jarEntry = enumeration.nextElement()
+                            //取出每一个class类，注意这里的包名是"/"分割 ，不是"."
+                            String entryName = jarEntry.name
+                            //todothing
 //                        if (entryName.startsWith(pathPre)) {
 //                            InputStream inputStream = srcJar.getInputStream(jarEntry)
 //                            //从jar中取出对应的输入流
 //                            byte [] bytes = scanClass(inputStream) //jar包需要copy一个临时包最后再rename
 //                            inputStream.close()
 //                        }
-                       }
-                   }
-                   FileUtils.copyFile(src, dest)
-               }
-               //处理工程目录，以及工程字节码（项目源文件）
-               input.directoryInputs.each { DirectoryInput directoryInput ->
-                   //分别遍历app/build/intermediates/classes/debug下的每个目录
-                   String root = directoryInput.file.absolutePath
-                   if (!root.endsWith(File.separator)) {
-                       root += File.separator
-                   }
-                   directoryInput.file.eachFileRecurse { File file ->
-                       //遍历app/build/intermediates/classes/debug/*/ 下的每一个文件
-                       def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
-                       if (!(File.separator == '/')) {
-                           path = path.replaceAll("\\\\", "/")
-                       }
+                        }
+                    }
+                    FileUtils.copyFile(src, dest)
+                }
+                //处理工程目录，以及工程字节码（项目源文件）
+                input.directoryInputs.each { DirectoryInput directoryInput ->
+                    //分别遍历app/build/intermediates/classes/debug下的每个目录
+                    String root = directoryInput.file.absolutePath
+                    if (!root.endsWith(File.separator)) {
+                        root += File.separator
+                    }
+                    directoryInput.file.eachFileRecurse { File file ->
+                        //遍历app/build/intermediates/classes/debug/*/ 下的每一个文件
+                        def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
+                        if (!(File.separator == '/')) {
+                            path = path.replaceAll("\\\\", "/")
+                        }
 //                    log("class文件path>>>$path")
-                       //筛选class文件
-                       //shouldExcludeClass：如果配置了exclude，就排除对应class文件
-                       //shouldProcessClass：如果配置了pathPre，就只处理对应的class文件
-                       //shouldProcessClassName:排除一些class文件
-                       if (file.isFile() && shouldExcludeClass(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
-                           FileInputStream fis = new FileInputStream(file)
-                           byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
-                           FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
-                           fos.write(bytes)
-                           fos.close()
-                           fis.close()
-                       }
-                   }
-                   File dest = transformInvocation.getOutputProvider().getContentLocation(
-                           directoryInput.name,
-                           directoryInput.contentTypes,
-                           directoryInput.scopes,
-                           Format.DIRECTORY)
-                   FileUtils.copyDirectory(directoryInput.file, dest)
-               }
-           }
-       }
+                        //筛选class文件
+                        //shouldExcludeClass：如果配置了exclude，就排除对应class文件
+                        //shouldProcessClass：如果配置了pathPre，就只处理对应的class文件
+                        //shouldProcessClassName:排除一些class文件
+                        if (file.isFile() && shouldExcludeClass(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
+                            log("MixPlugin>>>$path")
+                            FileInputStream fis = new FileInputStream(file)
+                            byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
+                            FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
+                            fos.write(bytes)
+                            fos.close()
+                            fis.close()
+                        }
+                    }
+                    File dest = transformInvocation.getOutputProvider().getContentLocation(
+                            directoryInput.name,
+                            directoryInput.contentTypes,
+                            directoryInput.scopes,
+                            Format.DIRECTORY)
+                    FileUtils.copyDirectory(directoryInput.file, dest)
+                    log("MixPlugin>>>拷贝处理后的文件")
+                }
+            }
+        }
     }
 
     /**
@@ -244,9 +246,11 @@ class MixTransform extends Transform {
             if ("Lcom/potato/mix/MixExclude;" == descriptor) {
                 isMix = false
             }
-            if ("Lcom/potato/mix/MixTemplate;" == descriptor) {
+            if ("Lcom/potato/mix/MixTemplate;" == descriptor) {//模板类
                 isTemplateClass = true
                 findType()
+            } else {
+                log("MixPlugin>>>不是模板类，type=$type")
             }
             return super.visitAnnotation(descriptor, visible)
         }
@@ -256,7 +260,8 @@ class MixTransform extends Transform {
             MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions)
             if (isTemplateClass) {//模板类不参与插桩
                 if (excludeMethodTemp(name)) {
-                    boolean canGetMethod = access == (Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC)//public static的方法才符合存储条件
+                    boolean canGetMethod = access == (Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC)
+//public static的方法才符合存储条件
                     if (!canGetMethod) return mv
                     //存储结构如下：一个type对应着一个List，List里装着每个方法的name、desc、type
                     Map<String, String> methodMap = new HashMap<>()
@@ -266,20 +271,17 @@ class MixTransform extends Transform {
                     methodList.add(methodMap)
                     methodMapList.put(type, methodList)
                 }
-                //保存name, desc, type
                 return mv
-            }
+            }/* else {
+                log("MixPlugin>>>没有找到模板类")
+            }*/
             if (!isInterface && !isAbstract && isMix && excludeMethod(name)) {
                 if (null != mixMethodName && "" != mixMethodName) {
                     if (mixMethodName == name) {
-//                        log('=========================================================START==================================================================')
-//                        log("${className}>>>$name")
                         //匹配对应的方法名字，进行插桩
                         mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
                     }
                 } else {
-//                    log('=========================================================START==================================================================')
-//                    log("${className}>>>$name")
                     //没有配置方法名称，无差别插桩
                     mv = new MixAdviceAdapter(Opcodes.ASM5, mv, access, name, desc)
                 }
@@ -369,11 +371,10 @@ class MixTransform extends Transform {
          * 插入模板方法(获取所有的模板类及其对应的所有方法，并全部执行)
          */
         private void insertTemplate() {
+            log("MixPlugin>>>开始插入......插桩模板类个数：${methodMapList.size()}")
             if (methodMapList.size() == 0) return
-//            log("MixPlugin>>>开始插入......插桩模板类个数：${methodMapList.size()}")
             for (Map.Entry<String, List<Map<String, String>>> entry : methodMapList.entrySet()) {
                 if (null == entry || null == entry.value || entry.value.size() == 0) return
-//                log("MixPlugin>>>开始插入......插桩模板类中函数的个数：${entry.value.size()}")
                 entry.value.each {
                     Map<String, String> ms ->
                         String name = ms.get("name")

@@ -1,29 +1,30 @@
-package com.potato.asmmix;
+package com.potato.asmmix
 
-import android.content.ContentResolver;
-import android.content.Context;
+import com.potato.asmmix.UriTest
+import android.content.ContentResolver
+import android.content.Context
+import java.lang.Exception
 
 /**
  * create by Potato
  * create time 2020/7/31
  * Description：try catch测试
  */
-public class TryCatchTest {
-    public void try1(Context context) {
-        ContentResolver cr = null;
-        try {
-            cr = context.getContentResolver();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+class TryCatchTest {
 
-    //插桩会出现异常
-//    public void try2(Context context) {
-//        try {
-//            ContentResolver cr = context.getContentResolver();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
+    fun try1(context: Context) {
+        var cr: ContentResolver? = null
+        try {
+            cr = context.contentResolver
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    } //插桩会出现异常
+    //    public void try2(Context context) {
+    //        try {
+    //            ContentResolver cr = context.getContentResolver();
+    //        } catch (Exception e) {
+    //            e.printStackTrace();
+    //        }
+    //    }
 }
