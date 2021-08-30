@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet
 import com.potato.mix.extentions.MixExtension
 
 import org.apache.commons.codec.digest.DigestUtils
+import org.gradle.internal.impldep.org.apache.ivy.util.FileUtil
 import org.objectweb.asm.*
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
@@ -23,11 +24,14 @@ class MixTransform extends Transform {
     private static String mixMethodName//方法名
     private static ArrayList exclude//排除class文件
     private static boolean isMix;//是否开启插件
+    private static String type = ""//模板类的Type
 
     //存储插桩方法内容
     private static Map<String, List<Map<String, String>>> methodMapList = new HashMap<>()
     private static List<Map<String, String>> methodList = new ArrayList<>()
-
+    //存储额外需要进行插桩的文件
+    private static Map<String, File> fileMap = new HashMap<>()
+    private static boolean processExtra = true
 
     MixTransform(Project project) {
         this.project = project
@@ -45,6 +49,7 @@ class MixTransform extends Transform {
                     entry.value.clear()
                 }
                 methodMapList.clear()
+                fileMap.clear()
             }
         }
     }
@@ -129,37 +134,69 @@ class MixTransform extends Transform {
                     if (!root.endsWith(File.separator)) {
                         root += File.separator
                     }
-                    directoryInput.file.eachFileRecurse { File file ->
-                        //遍历app/build/intermediates/classes/debug/*/ 下的每一个文件
-                        def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
-                        if (!(File.separator == '/')) {
-                            path = path.replaceAll("\\\\", "/")
-                        }
-//                    log("class文件path>>>$path")
-                        //筛选class文件
-                        //shouldExcludeClass：如果配置了exclude，就排除对应class文件
-                        //shouldProcessClass：如果配置了pathPre，就只处理对应的class文件
-                        //shouldProcessClassName:排除一些class文件
-                        if (file.isFile() && shouldExcludeClass(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
-                            log("MixPlugin>>>$path")
-                            FileInputStream fis = new FileInputStream(file)
-                            byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
-                            FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
-                            fos.write(bytes)
-                            fos.close()
-                            fis.close()
-                        }
-                    }
-                    File dest = transformInvocation.getOutputProvider().getContentLocation(
-                            directoryInput.name,
-                            directoryInput.contentTypes,
-                            directoryInput.scopes,
-                            Format.DIRECTORY)
-                    FileUtils.copyDirectory(directoryInput.file, dest)
-                    log("MixPlugin>>>拷贝处理后的文件")
+                    processASM(directoryInput, root)
+                    processCacheFile()
+                    processCopy(transformInvocation, directoryInput)
                 }
             }
         }
+    }
+
+    /**
+     * ASM核心处理
+     */
+    private List processASM(DirectoryInput directoryInput, String root) {
+        directoryInput.file.eachFileRecurse { File file ->
+            //遍历app/build/intermediates/classes/debug/*/ 下的每一个文件
+            def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
+            if (!(File.separator == '/')) {
+                path = path.replaceAll("\\\\", "/")
+            }
+            if (file.isFile() && shouldExcludeClass(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
+                FileInputStream fis = new FileInputStream(file)
+                byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
+                FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
+                fos.write(bytes)
+                fos.close()
+                fis.close()
+                if (type == "") {
+                    fileMap.put(path, file)
+                    log("MixPlugin>>>存储缓存：$path")
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理缓存文件，补充插桩
+     */
+    private void processCacheFile() {
+        if (processExtra) {
+            processExtra = false
+            fileMap.each { entry ->
+                File file = entry.value
+                if (file != null) {
+                    FileInputStream fis = new FileInputStream(file)
+                    byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
+                    FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
+                    fos.write(bytes)
+                    fos.close()
+                    fis.close()
+                }
+            }
+        }
+    }
+
+    /**
+     * ASM处理之后拷贝文件
+     */
+    private static void processCopy(TransformInvocation transformInvocation, DirectoryInput directoryInput) {
+        File dest = transformInvocation.getOutputProvider().getContentLocation(
+                directoryInput.name,
+                directoryInput.contentTypes,
+                directoryInput.scopes,
+                Format.DIRECTORY)
+        FileUtils.copyDirectory(directoryInput.file, dest)
     }
 
     /**
@@ -204,8 +241,11 @@ class MixTransform extends Transform {
                 "R.class" != name && "BuildConfig.class" != name
     }
 
-    private byte[] scanClass(InputStream inputStream, String className) throws IOException {
-        log("MixPlugin>>>插桩目标：$className")
+    private static byte[] scanClass(InputStream inputStream, String className) throws IOException {
+        if (type != "") {
+            log("==================================================================MixPlugin==================================================================")
+            log("MixPlugin>>>插桩目标：$className")
+        }
         //事件处理流程：读取事件-->适配器-->编写器
         //事件产生
         ClassReader cr = new ClassReader(inputStream)
@@ -227,7 +267,6 @@ class MixTransform extends Transform {
         boolean isAbstract
         boolean isMix = true//true：默认混淆代码插桩
         boolean isTemplateClass = false//true：插桩模板类
-        String type = ""//模板类的type
 
         ScanClassVisitor(int api, ClassVisitor cv, String className) {
             super(api, cv)
@@ -241,6 +280,9 @@ class MixTransform extends Transform {
             isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0
         }
 
+        /**
+         * 如果类没有注解，不会调用此方法
+         */
         @Override
         AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
             if ("Lcom/potato/mix/MixExclude;" == descriptor) {
@@ -249,8 +291,6 @@ class MixTransform extends Transform {
             if ("Lcom/potato/mix/MixTemplate;" == descriptor) {//模板类
                 isTemplateClass = true
                 findType()
-            } else {
-                log("MixPlugin>>>不是模板类，type=$type")
             }
             return super.visitAnnotation(descriptor, visible)
         }
@@ -341,7 +381,7 @@ class MixTransform extends Transform {
 
         @Override
         protected void onMethodEnter() {
-            if (!methodName.contains("<init>")) {
+            if (type != "" && !methodName.contains("<init>")) {
                 insertTemplate()
 //                log("方法前插入")
                 for (i in 0..3) {
@@ -355,7 +395,7 @@ class MixTransform extends Transform {
 
         @Override
         protected void onMethodExit(int opcode) {
-            if (methodName.contains("<init>")) {
+            if (type != "" && methodName.contains("<init>")) {
                 insertTemplate()
 //                log('方法后插入')
                 for (i in 0..3) {
@@ -371,7 +411,6 @@ class MixTransform extends Transform {
          * 插入模板方法(获取所有的模板类及其对应的所有方法，并全部执行)
          */
         private void insertTemplate() {
-            log("MixPlugin>>>开始插入......插桩模板类个数：${methodMapList.size()}")
             if (methodMapList.size() == 0) return
             for (Map.Entry<String, List<Map<String, String>>> entry : methodMapList.entrySet()) {
                 if (null == entry || null == entry.value || entry.value.size() == 0) return
@@ -381,7 +420,7 @@ class MixTransform extends Transform {
                         String type = ms.get("type")
                         String desc = ms.get("desc")
                         invokeStatic(Type.getType(type), new Method(name, desc))
-                        log("获取到了插桩的方法，正在给${methodName}插桩......插入的方法是：$name")
+                        log("正在给${methodName}插桩......插入的方法是：$name")
                 }
             }
         }
