@@ -250,8 +250,8 @@ class MixTransform extends Transform {
         //事件产生
         ClassReader cr = new ClassReader(inputStream)
         //事件处理
-        //COMPUTE_MAXS:kotlin中的双问号使用，或者try catch代码块中的类声明，都不会报错（原因：不会忽略对战中的帧）
-        //COMPUTE_FRAMES:与上面相反（原因：会忽略对战中的帧，重新计算）
+        //COMPUTE_MAXS:kotlin中的双问号使用，或者try catch代码块中的类声明，都不会报错（原因：不会忽略堆栈中的帧）
+        //COMPUTE_FRAMES:与上面相反（原因：会忽略堆栈中的帧，需要重新计算）
         ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS)
         //代理处理，并转发给cw
         ScanClassVisitor cv = new ScanClassVisitor(Opcodes.ASM5, cw, className)  //ClassWriter 的代理类
