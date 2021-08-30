@@ -17,5 +17,5 @@ public class Template {
     public static void mixTow() {
         System.out.println("我是插桩方法模板二");
     }
-    public void test(){}
+//    public void test(){}
 }

@@ -3,6 +3,8 @@ package com.potato.asmmix;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import com.potato.asmmix.dialog.GuideOneDialog;
+
 /**
  * create by Potato
  * create time 2020/7/30
