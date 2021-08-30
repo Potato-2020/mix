@@ -9,8 +9,8 @@ mix {
     isMix true//开启混淆插桩插件
     openLog true//开启日志打印
     pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件
-    methodName 'onCreate'//混淆插桩某个方法
-    exclude '',''//排除这些包下的文件
+//    methodName 'onCreate'//混淆插桩某个方法
+//    exclude '',''//排除这些包下的文件
 }
 
 android {
