@@ -145,7 +145,7 @@ class MixTransform extends Transform {
     /**
      * ASM核心处理
      */
-    private List processASM(DirectoryInput directoryInput, String root) {
+    private static List processASM(DirectoryInput directoryInput, String root) {
         directoryInput.file.eachFileRecurse { File file ->
             //遍历app/build/intermediates/classes/debug/*/ 下的每一个文件
             def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
@@ -170,7 +170,7 @@ class MixTransform extends Transform {
     /**
      * 处理缓存文件，补充插桩
      */
-    private void processCacheFile() {
+    private static void processCacheFile() {
         if (processExtra) {
             processExtra = false
             fileMap.each { entry ->
@@ -250,7 +250,9 @@ class MixTransform extends Transform {
         //事件产生
         ClassReader cr = new ClassReader(inputStream)
         //事件处理
-        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES)
+        //COMPUTE_MAXS:kotlin中的双问号使用，或者try catch代码块中的类声明，都不会报错（原因：不会忽略对战中的帧）
+        //COMPUTE_FRAMES:与上面相反（原因：会忽略对战中的帧，重新计算）
+        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS)
         //代理处理，并转发给cw
         ScanClassVisitor cv = new ScanClassVisitor(Opcodes.ASM5, cw, className)  //ClassWriter 的代理类
         cr.accept(cv, ClassReader.EXPAND_FRAMES)
@@ -301,7 +303,7 @@ class MixTransform extends Transform {
             if (isTemplateClass) {//模板类不参与插桩
                 if (excludeMethodTemp(name)) {
                     boolean canGetMethod = access == (Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC)
-//public static的方法才符合存储条件
+                    //public static的方法才符合存储条件
                     if (!canGetMethod) return mv
                     //存储结构如下：一个type对应着一个List，List里装着每个方法的name、desc、type
                     Map<String, String> methodMap = new HashMap<>()
@@ -312,9 +314,7 @@ class MixTransform extends Transform {
                     methodMapList.put(type, methodList)
                 }
                 return mv
-            }/* else {
-                log("MixPlugin>>>没有找到模板类")
-            }*/
+            }
             if (!isInterface && !isAbstract && isMix && excludeMethod(name)) {
                 if (null != mixMethodName && "" != mixMethodName) {
                     if (mixMethodName == name) {
