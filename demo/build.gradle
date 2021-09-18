@@ -10,7 +10,7 @@ mix {
     openLog true//开启日志打印
     pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件
 //    methodName 'onCreate'//混淆插桩某个方法
-//    exclude '',''//排除这些包下的文件
+    exclude 'com.potato.asmmix.dialog'//排除这些包下的文件
 }
 
 android {

@@ -135,7 +135,7 @@ class MixTransform extends Transform {
                         root += File.separator
                     }
                     processASM(directoryInput, root)
-                    processCacheFile()
+                    processCacheFile(root)
                     processCopy(transformInvocation, directoryInput)
                 }
             }
@@ -170,18 +170,35 @@ class MixTransform extends Transform {
     /**
      * 处理缓存文件，补充插桩
      */
-    private static void processCacheFile() {
+    private static void processCacheFile(String root) {
         if (processExtra) {
             processExtra = false
             fileMap.each { entry ->
                 File file = entry.value
                 if (file != null) {
-                    FileInputStream fis = new FileInputStream(file)
-                    byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
-                    FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
-                    fos.write(bytes)
-                    fos.close()
-                    fis.close()
+                    def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
+                    if (!(File.separator == '/')) {
+                        path = path.replaceAll("\\\\", "/")
+                    }
+//                    String excludePath = ""
+//                    String[] pathArray = path.split("/")
+//                    if (pathArray.length > 1) {
+//                        pathArray[pathArray.length - 1] = ""
+//                        pathArray.each {pathSplit ->
+//                            excludePath += pathSplit + "/"
+//                        }
+//                        excludePath = excludePath.substring(0, excludePath.length() - 2)
+//                    }
+//                    log("MixPlugin--->分割处理后得path：$excludePath")
+                    if (shouldExcludeClass(path)) {
+                        log("==============================================${path}======================================================================================>>>虽然排除了，但是还是执行了插桩！！！！")
+                        FileInputStream fis = new FileInputStream(file)
+                        byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
+                        FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
+                        fos.write(bytes)
+                        fos.close()
+                        fis.close()
+                    }
                 }
             }
         }
@@ -216,7 +233,10 @@ class MixTransform extends Transform {
     private static boolean shouldExcludeClass(String classFilePath) {
         if (exclude.size() == 0) return true
         exclude.each { String dir ->
-            if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))) return false
+            if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))) {
+                log("哈哈哈哈哈哈哈》》》》排除！！！！！$classFilePath")
+                return false
+            }
         }
         return true
     }
