@@ -1,17 +1,14 @@
 package com.potato.mix.transform
 
 import com.android.build.api.transform.*
-import com.android.builder.model.AndroidProject
 import com.android.utils.FileUtils
 import com.google.common.collect.ImmutableSet
 import com.potato.mix.extentions.MixExtension
-
 import org.apache.commons.codec.digest.DigestUtils
-import org.gradle.internal.impldep.org.apache.ivy.util.FileUtil
+import org.gradle.api.Project
 import org.objectweb.asm.*
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
-import org.gradle.api.Project
 
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
@@ -30,8 +27,7 @@ class MixTransform extends Transform {
     private static Map<String, List<Map<String, String>>> methodMapList = new HashMap<>()
     private static List<Map<String, String>> methodList = new ArrayList<>()
     //存储额外需要进行插桩的文件
-    private static Map<String, File> fileMap = new HashMap<>()
-    private static boolean processExtra = true
+    private static Map<String, DirectoryInput> inputCacheMap = new HashMap<>()
 
     MixTransform(Project project) {
         this.project = project
@@ -49,7 +45,7 @@ class MixTransform extends Transform {
                     entry.value.clear()
                 }
                 methodMapList.clear()
-                fileMap.clear()
+                inputCacheMap.clear()
             }
         }
     }
@@ -135,8 +131,31 @@ class MixTransform extends Transform {
                         root += File.separator
                     }
                     processASM(directoryInput, root)
-                    processCacheFile(root)
                     processCopy(transformInvocation, directoryInput)
+                }
+            }
+            //存在漏掉的文件，额外ASM处理一遍
+            inputCacheMap.each { entry ->
+                DirectoryInput directoryInput = entry.value
+                String keyPath = entry.key
+                String root = directoryInput.file.absolutePath
+                if (!root.endsWith(File.separator)) {
+                    root += File.separator
+                }
+                directoryInput.file.eachFileRecurse { File file ->
+                    def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
+                    if (!(File.separator == '/')) {
+                        path = path.replaceAll("\\\\", "/")
+                    }
+                    if (keyPath == path) {
+                        FileInputStream fis = new FileInputStream(file)
+                        byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
+                        FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
+                        fos.write(bytes)
+                        fos.close()
+                        fis.close()
+                        processCopy(transformInvocation, directoryInput)
+                    }
                 }
             }
         }
@@ -152,7 +171,7 @@ class MixTransform extends Transform {
             if (!(File.separator == '/')) {
                 path = path.replaceAll("\\\\", "/")
             }
-            if (file.isFile() && shouldExcludeClass(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
+            if (file.isFile() && checkExclude(path) && shouldProcessClass(path) && shouldProcessClassName(file.name)) {
                 FileInputStream fis = new FileInputStream(file)
                 byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
                 FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
@@ -160,45 +179,7 @@ class MixTransform extends Transform {
                 fos.close()
                 fis.close()
                 if (type == "") {
-                    fileMap.put(path, file)
-                    log("MixPlugin>>>存储缓存：$path")
-                }
-            }
-        }
-    }
-
-    /**
-     * 处理缓存文件，补充插桩
-     */
-    private static void processCacheFile(String root) {
-        if (processExtra) {
-            processExtra = false
-            fileMap.each { entry ->
-                File file = entry.value
-                if (file != null) {
-                    def path = file.absolutePath.replace(root, '') //取出path看下包名是否是符合的包名信息
-                    if (!(File.separator == '/')) {
-                        path = path.replaceAll("\\\\", "/")
-                    }
-//                    String excludePath = ""
-//                    String[] pathArray = path.split("/")
-//                    if (pathArray.length > 1) {
-//                        pathArray[pathArray.length - 1] = ""
-//                        pathArray.each {pathSplit ->
-//                            excludePath += pathSplit + "/"
-//                        }
-//                        excludePath = excludePath.substring(0, excludePath.length() - 2)
-//                    }
-//                    log("MixPlugin--->分割处理后得path：$excludePath")
-                    if (shouldExcludeClass(path)) {
-                        log("==============================================${path}======================================================================================>>>虽然排除了，但是还是执行了插桩！！！！")
-                        FileInputStream fis = new FileInputStream(file)
-                        byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
-                        FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
-                        fos.write(bytes)
-                        fos.close()
-                        fis.close()
-                    }
+                    inputCacheMap.put(path, directoryInput)
                 }
             }
         }
@@ -221,24 +202,27 @@ class MixTransform extends Transform {
      *
      * @param classFilePath 扫描的class文件的路径
      */
-    static boolean shouldProcessClass(String classFilePath) {
+   private static boolean shouldProcessClass(String classFilePath) {
         return classFilePath != null && classFilePath.startsWith(pathPre.replaceAll("\\.", "/"))
     }
 
     /**
-     * 如果配置了exclude，就排除对应class文件
-     *
-     * @param classFilePath 扫描的class文件的路径
+     * 检查是排除的包名
+     * @return true：检查通过
      */
-    private static boolean shouldExcludeClass(String classFilePath) {
-        if (exclude.size() == 0) return true
-        exclude.each { String dir ->
-            if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))) {
-                log("哈哈哈哈哈哈哈》》》》排除！！！！！$classFilePath")
-                return false
+    private static boolean checkExclude(String classFilePath) {
+        boolean isChecked = true
+        if (exclude.size() == 0) {
+            isChecked = true
+        } else {
+            exclude.each { String dir ->
+                if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))){
+                    log("MixPlugin>>>捕捉到了Exclude，文件path：$classFilePath")
+                    isChecked = false
+                }
             }
         }
-        return true
+        return isChecked
     }
 
     /**
