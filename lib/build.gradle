@@ -27,7 +27,7 @@ tasks.withType(JavaCompile) {
 }
 
 group = 'com.biligle.mix'
-version = '1.0'
+version = '1.0.0'
 
 java {
     //gradle6.3新方法
