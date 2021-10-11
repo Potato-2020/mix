@@ -1,5 +1,5 @@
 # mix
-ASM混淆
+ASM马甲包插入junk code
 # 使用说明
 **根目录下的build.gradle**
 
