@@ -45,7 +45,7 @@ depencies{
 ```
 
 **注入模板类代码**
-
+注意：Template类要放在上面配置的包名路径下（pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件）
 ```java
 /**
 * 注意，此模板类中所有的public static 修饰的声明的方法，都会执行插桩操作。
