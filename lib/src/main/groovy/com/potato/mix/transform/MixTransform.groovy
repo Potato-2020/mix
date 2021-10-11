@@ -20,7 +20,8 @@ class MixTransform extends Transform {
     private static boolean openLog//是否开启日志打印
     private static String mixMethodName//方法名
     private static ArrayList exclude//排除class文件
-    private static boolean isMix;//是否开启插件
+    private static boolean isMix//是否开启插件
+    private static boolean excludeMethod = true//是否排除方法, true:已经排除了
     private static String type = ""//模板类的Type
 
     //存储插桩方法内容
@@ -291,9 +292,7 @@ class MixTransform extends Transform {
          */
         @Override
         AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-            if ("Lcom/potato/mix/MixExclude;" == descriptor) {
-                isMix = false
-            }
+            isMix = "Lcom/potato/mix/MixExclude;" != descriptor
             if ("Lcom/potato/mix/MixTemplate;" == descriptor) {//模板类
                 isTemplateClass = true
                 findType()
@@ -370,6 +369,7 @@ class MixTransform extends Transform {
         protected MixAdviceAdapter(int api, MethodVisitor mv, int access, String name, String desc) {
             super(api, mv, access, name, desc)
             methodName = name
+            excludeMethod = true
         }
 
         /**
@@ -380,6 +380,7 @@ class MixTransform extends Transform {
          */
         @Override
         AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            excludeMethod = "Lcom/potato/mix/MixExcludeMethod;" != desc
             return super.visitAnnotation(desc, visible)
         }
 
@@ -388,11 +389,11 @@ class MixTransform extends Transform {
             if (type != "" && !methodName.contains("<init>")) {
                 insertTemplate()
 //                log("方法前插入")
-                for (i in 0..3) {
-                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
-                    visitLdcInsn("Let's go")
-                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
-                }
+//                for (i in 0..3) {
+//                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
+//                    visitLdcInsn("Let's go")
+//                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
+//                }
 //                log('=========================================================OVER==========================================================\n\n')
             }
         }
@@ -402,11 +403,11 @@ class MixTransform extends Transform {
             if (type != "" && methodName.contains("<init>")) {
                 insertTemplate()
 //                log('方法后插入')
-                for (i in 0..3) {
-                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
-                    visitLdcInsn("Sorry, I'm tired")
-                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
-                }
+//                for (i in 0..3) {
+//                    getStatic(Type.getType("Ljava/lang/System;"), "out", Type.getType("Ljava/io/PrintStream;"))
+//                    visitLdcInsn("Sorry, I'm tired")
+//                    invokeVirtual(Type.getType("Ljava/io/PrintStream;"), new Method("println", "(Ljava/lang/String;)V"))
+//                }
 //                log('=========================================================OVER==================================================================\n\n')
             }
         }
@@ -415,7 +416,7 @@ class MixTransform extends Transform {
          * 插入模板方法(获取所有的模板类及其对应的所有方法，并全部执行)
          */
         private void insertTemplate() {
-            if (methodMapList.size() == 0) return
+            if (methodMapList.size() == 0 || !excludeMethod) return
             for (Map.Entry<String, List<Map<String, String>>> entry : methodMapList.entrySet()) {
                 if (null == entry || null == entry.value || entry.value.size() == 0) return
                 entry.value.each {
