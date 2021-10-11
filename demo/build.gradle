@@ -1,8 +1,7 @@
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
-apply plugin: 'mixPlugin'//id的方式，引入本地maven插件
+apply plugin: 'mixPlugin'
 
 mix {
     isMix true//开启混淆插桩插件
