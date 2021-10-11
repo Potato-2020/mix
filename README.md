@@ -1,5 +1,7 @@
 # mix
 ASM马甲包插入junk code
+# 打包效果
+![a](https://github.com/Potato-2020/mix/blob/master/process.gif)
 # 使用说明
 **根目录下的build.gradle**
 
