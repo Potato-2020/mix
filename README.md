@@ -12,7 +12,7 @@ buildscript {
     }
     dependencies {
         ......
-        classpath 'com.potato.mix:mixPlugin:1.0.0'
+        classpath 'com.biligle.mix:mixPlugin:1.0.0'
         ......
     }
     allprojects {
@@ -28,7 +28,7 @@ buildscript {
 **app下的build.gradle**
 
 ```groovy
-apply plugin: 'mixplugin'
+apply plugin: 'mixPlugin'
 mix {
     isMix true//开启混淆插桩插件
     openLog true//开启日志打印
