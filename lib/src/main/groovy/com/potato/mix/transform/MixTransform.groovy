@@ -292,7 +292,9 @@ class MixTransform extends Transform {
          */
         @Override
         AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-            isMix = "Lcom/potato/mix/MixExclude;" != descriptor
+            if ("Lcom/potato/mix/MixExclude;" == descriptor) {
+                isMix = false
+            }
             if ("Lcom/potato/mix/MixTemplate;" == descriptor) {//模板类
                 isTemplateClass = true
                 findType()
@@ -380,7 +382,9 @@ class MixTransform extends Transform {
          */
         @Override
         AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-            excludeMethod = "Lcom/potato/mix/MixExcludeMethod;" != desc
+            if ("Lcom/potato/mix/MixExcludeMethod;" == desc) {
+                excludeMethod = false
+            }
             return super.visitAnnotation(desc, visible)
         }
 
