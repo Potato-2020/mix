@@ -9,12 +9,15 @@ ASM马甲包插入junk code
 buildscript {
     repositories {
         ......
+        maven {
+            url "https://dl.bintray.com/potato-2020/mixPlugin"
+        }
         ......
         
     }
     dependencies {
         ......
-        classpath 'com.biligle.mix:mixPlugin:1.0.0'
+        classpath 'com.potato.mix:mixPlugin:0.2'
         ......
     }
     allprojects {
@@ -30,27 +33,23 @@ buildscript {
 **app下的build.gradle**
 
 ```groovy
-apply plugin: 'mixPlugin'
+apply plugin: 'mixplugin'
 mix {
-    isMix true//开启混淆插桩插件
-    openLog true//开启日志打印
-    pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件
-//    methodName 'onCreate'//混淆插桩某个方法
-//    exclude 'com.potato.asmmix.dialog'b,'xx.x.xx.x'//排除这些包下的文件
+    isMix true//true:开启; fasle：关闭
+    openLog true//true:开启ASM打印日志
+    pathPre 'com.epoch.easyCoin'//凡是以这个开头的类，都会被插入一些模板代码
+//    methodName 'onCreate'//针对某个方法混淆插桩
+//    exclude 'com.epoch.easyCoin.mvvmEasy.debugEasy', "com.epoch.easyCoin.baseEasy"//这里的不插桩代码
 }
 depencies{
     ......
-    implementation 'com.github.Potato-2020:mixTools:1.0'
+    implementation 'com.github.Potato-2020:mixTools:1.0.2'
 }
 ```
 
 **注入模板类代码**
-注意：Template类要放在上面配置的包名路径下（pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件）
+
 ```java
-/**
-* 注意，此模板类中所有的public static 修饰的声明的方法，都会执行插桩操作。
-* 如果不想插入方法，使用private或者非static修饰。
-*/
 @MixTemplate
 public class Template {
 
@@ -61,10 +60,6 @@ public class Template {
     public static void mixTow() {
         System.out.println("我是插桩方法模板二");
     }
-//    private void mixTow() {
-//        System.out.println("这个方法不会进行插桩");
-//    }
-
 }
 ```
 
@@ -77,3 +72,13 @@ public class Test {
 
 }
 ```
+
+**排除某个方法**
+
+```java
+@MixExcludeMethod
+public void test() {
+
+}
+```
+
