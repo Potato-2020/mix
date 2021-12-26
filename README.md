@@ -17,7 +17,7 @@ buildscript {
     }
     dependencies {
         ......
-        classpath 'com.potato.mix:mixPlugin:1.0.3'
+        classpath 'com.potato.mix:mixPlugin:1.0.2'
         ......
     }
     allprojects {
@@ -43,7 +43,7 @@ mix {
 }
 depencies{
     ......
-    implementation 'com.github.Potato-2020:mixTools:1.0.3'
+    implementation 'com.github.Potato-2020:mixTools:1.0.2'
 }
 ```
 
