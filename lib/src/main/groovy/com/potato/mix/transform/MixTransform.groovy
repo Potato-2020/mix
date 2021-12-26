@@ -203,7 +203,7 @@ class MixTransform extends Transform {
      *
      * @param classFilePath 扫描的class文件的路径
      */
-   private static boolean shouldProcessClass(String classFilePath) {
+    private static boolean shouldProcessClass(String classFilePath) {
         return classFilePath != null && classFilePath.startsWith(pathPre.replaceAll("\\.", "/"))
     }
 
@@ -217,7 +217,7 @@ class MixTransform extends Transform {
             isChecked = true
         } else {
             exclude.each { String dir ->
-                if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))){
+                if (classFilePath.startsWith(dir.replaceAll("\\.", "/"))) {
                     log("MixPlugin>>>捕捉到了Exclude，文件path：$classFilePath")
                     isChecked = false
                 }
@@ -442,7 +442,8 @@ class MixTransform extends Transform {
      * @return
      */
     static boolean excludeMethod(String name) {
-        return name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$")
+        return name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$") && !name.contains("run")
+                && !name.contains("getView") && !name.contains("convert") && !name.contains("onBindViewHolder") && !name.contains("getItemViewType") && !name.contains("onCreateViewHolder")
     }
 
     /**
