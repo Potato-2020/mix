@@ -1,15 +1,15 @@
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-//apply plugin: 'mixPlugin'//id的方式
+apply plugin: 'mixPlugin'
 
-//mix {
-//    isMix true//开启混淆插桩插件
-//    openLog true//开启日志打印
-//    pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件
+mix {
+    isMix true//开启混淆插桩插件
+    openLog true//开启日志打印
+    pathPre 'com.potato.asmmix'//混淆插桩这个包下的所有文件
 //    methodName 'onCreate'//混淆插桩某个方法
 //    exclude 'com.potato.asmmix.dialog'//排除这些包下的文件
-//}
+}
 
 android {
     compileSdkVersion 30

@@ -45,6 +45,7 @@ class MixTransform extends Transform {
                     if (null == entry || null == entry.value || entry.value.size() == 0) return
                     entry.value.clear()
                 }
+                type = ""
                 methodMapList.clear()
                 inputCacheMap.clear()
             }
@@ -149,6 +150,7 @@ class MixTransform extends Transform {
                         path = path.replaceAll("\\\\", "/")
                     }
                     if (keyPath == path) {
+                        log("MixPlugin>>>处理漏掉的文件，再次插桩，path：$keyPath")
                         FileInputStream fis = new FileInputStream(file)
                         byte[] bytes = scanClass(fis, file.parentFile.absolutePath + File.separator + file.name)
                         FileOutputStream fos = new FileOutputStream(file.parentFile.absolutePath + File.separator + file.name)
@@ -181,6 +183,7 @@ class MixTransform extends Transform {
                 fis.close()
                 if (type == "") {
                     inputCacheMap.put(path, directoryInput)
+                    log("MixPlugin>>>漏掉了一个文件：path: $path")
                 }
             }
         }
@@ -243,7 +246,7 @@ class MixTransform extends Transform {
      */
     static boolean shouldProcessClassName(String name) {
         return name.endsWith(".class") && !name.startsWith("R\$") && !name.contains("\$") &&
-                "R.class" != name && "BuildConfig.class" != name
+                "R.class" != name && "BuildConfig.class" != name && !name.endsWith("Binding.class")
     }
 
     private static byte[] scanClass(InputStream inputStream, String className) throws IOException {
