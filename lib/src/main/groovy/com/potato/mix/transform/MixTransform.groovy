@@ -445,7 +445,7 @@ class MixTransform extends Transform {
      * @return
      */
     static boolean excludeMethod(String name) {
-        return name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$") && !name.contains("run") && !name.contains("getView") && !name.contains("convert") && !name.contains("onBindViewHolder") && !name.contains("getItemViewType") && !name.contains("onCreateViewHolder")
+        return name != "toString" && name != "copy" && name != "hashCode" && name != "component1" && name != "<clinit>" && !name.contains("\$") && !name.contains("run") && !name.contains("handleMessage") && !name.contains("post") && !name.contains("postDelayed") && !name.contains("getView") && !name.contains("convert") && !name.contains("onBindViewHolder") && !name.contains("getItemViewType") && !name.contains("onCreateViewHolder")
     }
 
     /**
