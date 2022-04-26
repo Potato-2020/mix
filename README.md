@@ -9,15 +9,13 @@ ASM马甲包插入junk code
 buildscript {
     repositories {
         ......
-        maven {
-            url "https://dl.bintray.com/potato-2020/mixPlugin"
-        }
+        mavenLocal()
         ......
         
     }
     dependencies {
         ......
-        classpath 'com.potato.mix:mixPlugin:1.0.2'
+        classpath 'com.potato.mix:mixPlugin:1.0.3'
         ......
     }
     allprojects {
