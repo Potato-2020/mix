@@ -46,7 +46,7 @@ depencies{
 ```
 
 **注入模板类代码**
-
+注意：模板类方法，必须是静态的，目录位置，要在包名下
 ```java
 @MixTemplate
 public class Template {
